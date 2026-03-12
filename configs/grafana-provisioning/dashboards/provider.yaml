@@ -1,0 +1,53 @@
+apiVersion: 1
+
+providers:
+  - name: 'Infra Health Monitor'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+
+# Dashboard Provisioning Configuration
+# ====================================
+#
+# This configuration file enables automatic provisioning of Grafana dashboards.
+# Dashboards are loaded from JSON files in the specified path.
+#
+# Key Settings:
+# - name: Display name for this provider
+# - orgId: Organization ID (1 = default)
+# - folder: Folder where dashboards will be stored
+# - type: Provisioning type (file, github, gitlab, etc.)
+# - disableDeletion: Don't delete dashboards if removed from files
+# - updateIntervalSeconds: How often to check for changes
+# - allowUiUpdates: Allow manual edits in Grafana UI
+# - path: Directory containing dashboard JSON files
+#
+# Dashboard Folder Hierarchy:
+# /etc/grafana/provisioning/dashboards/
+#   ├── infrastructure/
+#   │   ├── 01-infrastructure-overview.json
+#   │   ├── 02-host-details.json
+#   │   └── ...
+#   ├── application/
+#   │   ├── app-performance.json
+#   │   └── ...
+#   └── observability/
+#       ├── logs-dashboard.json
+#       └── traces-dashboard.json
+#
+# Phase 3 Status:
+# - Provisioning structure defined
+# - Datasources configured
+# - Ready for dashboards (Phase 5)
+#
+# Next Steps (Phase 5):
+# 1. Create infrastructure overview dashboard
+# 2. Create host-specific dashboards
+# 3. Create application performance dashboards
+# 4. Create observability dashboards
+# 5. Implement dashboard templates and variables

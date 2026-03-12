@@ -1,0 +1,50 @@
+apiVersion: 1
+
+# list of datasources to insert/update depending on datasource.uid
+datasources:
+  # Prometheus datasource - primary metrics source
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-main
+    access: proxy
+    url: http://prometheus:9090
+    jsonData:
+      timeInterval: 15s
+    isDefault: true
+    editable: true
+
+  # SigNoz datasource - logs and traces
+  # Note: SigNoz integration with Grafana is via HTTP API
+  # This datasource connects to the Query Service
+  - name: SigNoz
+    type: nodeGraph
+    uid: signoz-main
+    access: proxy
+    url: http://signoz-query-service:3301
+    isDefault: false
+    editable: true
+    jsonData:
+      # SigNoz specifics can be added here
+      # Examples: retention, sampling settings, etc.
+
+  # Optional: Add additional datasources for advanced monitoring
+  # Depending on your needs, you might add:
+  # - Graphite (for alternative metrics)
+  # - InfluxDB (for time-series data)
+  # - Loki (for logs, if using instead of SigNoz)
+  # - Jaeger (for traces, if using instead of SigNoz)
+
+# Delete datasources that should not be present
+deleteDatasources: []
+
+# Set to false to disable Grafana from enforcing the datasource spec
+# This allows users to manage datasources in the UI
+overwrite: true
+
+# Define the folder where datasources should be stored
+# Options are: 'General', or any other existing folder
+defaultDatasourceFolder: 'General'
+
+# Define whether the datasources are editable or read-only
+# By default, datasources defined in this file are editable unless overwrite is false
+readOnly: false

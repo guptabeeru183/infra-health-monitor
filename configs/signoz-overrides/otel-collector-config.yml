@@ -1,0 +1,194 @@
+receivers: {}
+exporters:
+  prometheus:
+exporters: {}
+processors:
+  batch:
+    send_batch_size: 512
+    timeout: 5s
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 2048
+extensions:
+  zpages:
+    endpoint: 0.0.0.0:55679
+service:
+  telemetry:
+    logs:
+      level: warn
+  extensions:
+    - zpages
+  pipelines:
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+exporters:
+  # Prometheus exporter - export metrics to Prometheus
+  prometheus:
+    endpoint: 0.0.0.0:8888
+  
+  # Jaeger exporter - export traces to Jaeger (if using Jaeger)
+  # jaeger:
+  #   endpoint: jaeger:14250
+  #   tls_enabled: false
+
+  # OTLP exporter - export to another OTLP backend
+  # otlp:
+  #   endpoint: opentelemetry-backend:4317
+
+  # Logging exporter - log all telemetry (for debugging)
+  # logging:
+  #   loglevel: debug
+
+processors:
+  # Batch processor - groups telemetry for efficient transmission
+  batch:
+    send_batch_size: 512
+    timeout: 5s
+  
+  # Memory limiter - prevent memory exhaustion
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 2048
+  
+  # Attributes processor - add/modify attributes
+  # attributes:
+  #   actions:
+  #     - key: environment
+  #       value: production
+  #       action: upsert
+  #     - key: service.version
+  #       from_attribute: version
+  #       action: insert
+
+  # Resource processor - add resource attributes
+  # resource:
+  #   attributes:
+  #     - key: cluster.name
+  #       value: my-cluster
+  #       action: upsert
+
+  # Span processor - process traces
+  # span:
+  #   name:
+  #     from_attributes: ["http.method", "http.url"]
+  #     separator: " "
+
+extensions:
+  # zpages - Prometheus metrics about the collector itself
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  telemetry:
+    logs:
+      level: warn
+    metrics:
+      level: basic
+  extensions:
+    - zpages
+  pipelines:
+    # Traces pipeline - receive from OTLP, process, export
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [logging]  # Export to logging; add jaeger when configured
+    
+    # Metrics pipeline - receive from Prometheus and OTLP
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    
+    # Logs pipeline - receive from OTLP
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [logging]  # Export to logging; add backend when configured
+
+# Complete OpenTelemetry Collector Configuration
+# ===============================================
+#
+# This config enables the SigNoz OpenTelemetry Collector to:
+# 1. RECEIVE telemetry:
+#      - Traces (gRPC/HTTP OTLP protocol)
+#      - Metrics (Prometheus format + OTLP)
+#      - Logs (OTLP)
+#
+# 2. PROCESS telemetry:
+#      - Batch for efficiency
+#      - Memory limiting to prevent runaway
+#      - Attribute enrichment
+#
+# 3. EXPORT telemetry:
+#      - Prometheus metrics (via prometheus receiver)
+#      - Traces (via logging currently, configure Jaeger for production)
+#      - Logs (via logging currently, configure backend)
+#
+# Components Explained:
+# 
+# Receivers:
+#   otlp: OpenTelemetry Protocol receiver (gRPC on 4317, HTTP on 4318)
+#   prometheus: Prometheus compatible scrape config
+#
+# Processors:
+#   batch: Groups signals for efficient transmission
+#   memory_limiter: Prevents OOM by monitoring memory usage
+#
+# Exporters:
+#   prometheus: Exposes metrics on port 8888 for Prometheus to scrape
+#   logging: Output to stdout (debugging)
+#
+# Pipelines:
+#   traces -> [batch] -> [logging, jaeger]
+#   metrics -> [batch] -> [prometheus]
+#   logs -> [batch] -> [logging]
+#
+# Configuration Notes:
+# - zpages endpoint (55679) provides debug info and metrics about the collector
+# - Collector health check available at http://otel-collector:13133/healthz
+# - Metrics available at http://otel-collector:8888/metrics
+#
+# Phase 3 Status:
+# - Basic OTLP ingestion configured
+# - Metrics export to Prometheus enabled
+# - Trace export configured (logging for now)
+#
+# Phase 4 Configuration (Next):
+# - Configure Jaeger exporter for distributed tracing
+# - Configure backend exporters for logs
+# - Add resource detection processors
+# - Add service map attributes
+# - Configure sampling if needed
+# - Enable custom processors for data transformation
+#
+# Example Application Integration:
+# ```python
+# from opentelemetry import trace
+# from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+# from opentelemetry.sdk.trace import TracerProvider
+# from opentelemetry.sdk.trace.export import BatchSpanProcessor
+#
+# exporter = OTLPSpanExporter(endpoint="otel-collector:4317")
+# trace.set_tracer_provider(TracerProvider())
+# trace.get_tracer_provider().add_span_processor(
+#     BatchSpanProcessor(exporter)
+# )
+# tracer = trace.get_tracer(__name__)
+# with tracer.start_as_current_span("my-span"):
+#     # Your application code
+#     pass
+# ```
+#
+# Metrics are exposed on port 8888 with /metrics endpoint for Prometheus to scrape

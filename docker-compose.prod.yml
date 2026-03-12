@@ -1,0 +1,168 @@
+# Docker Compose Override for Production Environment
+# ==================================================
+# This file extends docker-compose.yml with production-specific settings
+# SECURITY: Review and configure all settings before deploying to production
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+
+version: '3.8'
+
+services:
+  prometheus:
+    # Production: Long retention, minimal logging
+    environment:
+      - PROMETHEUS_ARGS=--storage.tsdb.path=/prometheus --storage.tsdb.retention.time=90d --log.level=error
+    volumes:
+      - ./configs/prometheus-overrides/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus-overrides/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  grafana:
+    # Production: Strict authentication, no plugin installation
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-CHANGE_ME}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION=false
+      - GF_INSTALL_PLUGINS=
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - ./configs/grafana-provisioning:/etc/grafana/provisioning:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  alertmanager:
+    # Production: Email and webhook notifications enabled
+    environment:
+      - ALERTMANAGER_CONFIG=/etc/alertmanager/config.yml
+    volumes:
+      - ./configs/prometheus-overrides/alertmanager.yml:/etc/alertmanager/config.yml:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  netdata:
+    # Production: Full monitoring enabled
+    environment:
+      - NETDATA_LISTEN_PORT=19999
+      - NETDATA_DBENGINE_MULTIHOST_DB=yes
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  otel-collector:
+    # Production: Error level logging, batch processing
+    environment:
+      - LOG_LEVEL=error
+      - GOGC=80  # Aggressive garbage collection
+    volumes:
+      - ./configs/signoz-overrides/otel-collector-config.yml:/etc/otel/config.yml:ro
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Production: Automated backups
+  backup:
+    image: alpine:latest
+    container_name: ${COMPOSE_PROJECT_NAME}-backup
+    networks:
+      - monitoring-network
+    volumes:
+      - ./backups:/backups
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: |
+      /bin/sh -c "
+      apk add --no-cache docker-cli
+      while true; do
+        docker exec \${COMPOSE_PROJECT_NAME}-postgres pg_dump -U postgres -d signoz \
+          > /backups/signoz-\$(date +\%Y\%m\%d-\%H\%M\%S).sql
+        # Keep only last 7 days of backups
+        find /backups -name 'signoz-*.sql' -mtime +7 -delete
+        sleep 86400  # Daily backup
+      done
+      "
+    restart: always
+
+  # Production: Prometheus remote storage (optional)
+  # Uncomment to enable long-term remote storage
+  # Note: Configure remote_write in prometheus.yml
+  # Example: Thanos, Carbon/InfluxDB, or other remote storage backend
+  # remote-storage:
+  #   image: grafana/loki:latest
+  #   container_name: ${COMPOSE_PROJECT_NAME}-loki
+  #   networks:
+  #     - monitoring-network
+  #   restart: always
+
+  # Production: Log aggregation (optional)
+  # Uncomment to enable centralized logging
+  # loki:
+  #   image: grafana/loki:latest
+  #   ports:
+  #     - "3100:3100"
+  #   networks:
+  #     - monitoring-network
+
+# Production: Use named volumes with persistent storage drivers
+volumes:
+  prometheus-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=${NFS_SERVER:?NFS_SERVER not set},vers=4,soft,timeo=180,bg,tcp,rw
+      device: ":${NFS_PROMETHEUS_PATH:?NFS_PROMETHEUS_PATH not set}"
+  grafana-data:
+    driver: local
+  netdata-data:
+    driver: local
+  clickhouse-data:
+    driver: local
+
+networks:
+  monitoring-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: monitoring-br0
+
+# Additional production configurations via environment file
+# Create .env.production with:
+# - COMPOSE_PROJECT_NAME=infra-health-monitor-prod
+# - GRAFANA_PASSWORD=<strong-password>
+# - ALERTMANAGER_EMAIL_PASSWORD=<email-password>
+# - ALERTMANAGER_SLACK_WEBHOOK=<slack-webhook>
+# - NFS_SERVER=<nfs-server-ip>
+# - NFS_PROMETHEUS_PATH=/exports/prometheus
+# - POSTGRES_PASSWORD=<strong-password>
+# - SIGNOZ_API_TOKEN=<api-token>

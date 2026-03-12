@@ -1,0 +1,101 @@
+groups:
+  - name: System Health
+    interval: 30s
+    rules:
+      # Prometheus itself is down
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus has been unreachable for more than 5 minutes."
+
+      # Alertmanager is down
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alertmanager has been unreachable for more than 5 minutes."
+
+      # High CPU usage
+      - alert: HighCpuUsage
+        expr: |
+          (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% (current: {{ $value }}%)"
+
+      # High Memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% (current: {{ $value }}%)"
+
+      # Low Disk Space
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Less than 10% disk space available (current: {{ $value | humanize }}%)"
+
+      # Very Low Disk Space (Critical)
+      - alert: DiskSpaceCritical
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Less than 5% disk space available (current: {{ $value | humanize }}%)"
+
+      # Netdata target down
+      - alert: NetdataDown
+        expr: up{job="netdata"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Netdata is unreachable"
+          description: "Netdata monitoring agent on {{ $labels.instance }} has been down for more than 5 minutes"
+
+# Phase 3 Setup Note:
+# ==================
+# Basic alert rules are defined above. More comprehensive alerts will be added in Phase 7.
+# These rules serve as examples and should be customized based on your environment.
+#
+# Additional alert rules to add later:
+# - Service/application specific alerts
+# - Business metric alerts
+# - Response time degradation alerts
+# - Error rate alerts
+# - Availability alerts (via Uptime Kuma integration)
+# - Distributed tracing alerts (via SigNoz)
+#
+# Alert severities:
+# - critical: Page on-call immediately
+# - warning: Create ticket, monitor
+# - info: Log and monitor
+#
+# Alert sources:
+# - System metrics: Prometheus + Netdata
+# - Uptime metrics: Uptime Kuma (Phase 4)
+# - Application metrics: Custom exporters (Phase 4+)
+# - Observability: SigNoz (Phase 6)

@@ -1,0 +1,95 @@
+# Docker Compose Override for Staging Environment
+# =================================================
+# This file extends docker-compose.yml with staging-specific settings
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.staging.yml up
+#
+
+version: '3.8'
+
+services:
+  prometheus:
+    # Staging: Moderate retention, info logging
+    environment:
+      - PROMETHEUS_ARGS=--storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d --log.level=warn
+    volumes:
+      - ./configs/prometheus-overrides/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus-overrides/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+    # Increased resource limits for staging
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  grafana:
+    # Staging: Standard authentication, monitored plugins
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme}
+      - GF_INSTALL_PLUGINS=grafana-clockpanel-panel
+      - GF_USERS_ALLOW_SIGN_UP=false
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  alertmanager:
+    # Staging: Enable email notifications
+    environment:
+      - ALERTMANAGER_CONFIG=/etc/alertmanager/config.yml
+    volumes:
+      - ./configs/prometheus-overrides/alertmanager.yml:/etc/alertmanager/config.yml:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512M
+
+  netdata:
+    # Staging: Moderate memory usage
+    environment:
+      - NETDATA_LISTEN_PORT=19999
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Add backup container for staging
+  pg-backup:
+    image: postgres:15
+    container_name: ${COMPOSE_PROJECT_NAME}-pg-backup
+    networks:
+      - monitoring-network
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ./backups:/backups
+    entrypoint: |
+      /bin/bash -c "
+      while true; do
+        pg_dump -h signoz-postgres -U ${POSTGRES_USER:-signoz} \
+          -d ${POSTGRES_DB:-signoz} > /backups/signoz-\$(date +%Y%m%d-%H%M%S).sql
+        sleep 86400  # Daily backup
+      done
+      "
+    profiles:
+      - backup
+
+# Non-ephemeral volumes for staging persistence
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  netdata-data:
+    driver: local
+  clickhouse-data:
+    driver: local
+
+networks:
+  monitoring-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

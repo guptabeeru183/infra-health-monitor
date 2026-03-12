@@ -1,0 +1,74 @@
+# Docker Compose Override for Development Environment
+# ====================================================
+# This file extends docker-compose.yml with development-specific settings
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+
+version: '3.8'
+
+services:
+  prometheus:
+    # Development: More verbose logging, shorter retention
+    environment:
+      - PROMETHEUS_ARGS=--storage.tsdb.path=/prometheus --storage.tsdb.retention.time=7d --log.level=info
+    volumes:
+      # Bind mount for easy config updates without restart
+      - ./configs/prometheus-overrides/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus-overrides/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./configs/prometheus-overrides/alertmanager.yml:/etc/alertmanager/config.yml:ro
+    # Keep container running for debugging
+    stdin_open: true
+    tty: true
+
+  grafana:
+    # Development: Disable authentication, enable plugin installation
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clockpanel-panel,grafana-piechart-panel
+      - GF_DEVELOPMENT=true
+    volumes:
+      # Bind mount for easy provisioning updates
+      - ./configs/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./configs/grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+
+  alertmanager:
+    # Development: Less strict validation, debug logging
+    volumes:
+      - ./configs/prometheus-overrides/alertmanager.yml:/etc/alertmanager/config.yml:ro
+
+  otel-collector:
+    # Development: Verbose logging, lower sampling
+    environment:
+      - LOG_LEVEL=info
+    volumes:
+      - ./configs/signoz-overrides/otel-collector-config.yml:/etc/otel/config.yml:ro
+
+  # Optional: Development tools container
+  debug:
+    image: curlimages/curl:latest
+    container_name: infra-monitor-debug
+    networks:
+      - monitoring-network
+    depends_on:
+      - prometheus
+      - grafana
+    command: sleep 3600
+    profiles:
+      - debug
+
+# Development-specific volumes (smaller, faster)
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  netdata-data:
+    driver: local
+
+# Debug network (for development tools)
+networks:
+  monitoring-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
