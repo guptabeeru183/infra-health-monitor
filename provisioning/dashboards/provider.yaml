@@ -1,0 +1,164 @@
+apiVersion: 1
+
+# Grafana Dashboard Provisioning Configuration
+# This configuration enables automatic dashboard provisioning from files on startup
+# All dashboards in the specified path will be automatically loaded and kept in sync
+
+providers:
+  # Primary monitoring dashboards folder
+  - name: 'Monitoring Dashboards'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      # foldersFromFilesStructure: true  # Uncomment to organize by subfolder names
+
+# Configuration Details:
+# =====================
+
+# name: 
+#   Display name for this dashboard provider in Grafana UI
+#   
+# orgId: 
+#   Organization ID where dashboards will be imported (default: 1)
+#
+# folder:
+#   Dashboard folder name where all dashboards will be placed
+#   Created automatically if doesn't exist
+#
+# type:
+#   'file' - Loads dashboards from filesystem
+#   'http' - Loads dashboards from HTTP endpoint
+#   's3' - Loads from AWS S3 bucket
+#
+# disableDeletion:
+#   false - Deleting a dashboard JSON file will remove it from Grafana
+#   true - Dashboards persist in Grafana even if file is deleted
+#   RECOMMENDED: false for infrastructure as code approach
+#
+# updateIntervalSeconds:
+#   How often (in seconds) Grafana scans the folder for dashboard changes
+#   Default: 10 seconds
+#   RECOMMENDED: 10-30 seconds (balance between responsiveness and resource usage)
+#
+# allowUiUpdates:
+#   true - Users can edit dashboards in Grafana UI (changes sync to files)
+#   false - Dashboards are read-only from files (force IaC approach)
+#   RECOMMENDED: true for flexibility + false requires version control discipline
+#
+# options:
+#   Configuration specific to provider type
+#   
+#   path: Filesystem path where dashboard JSON files are stored
+#   foldersFromFilesStructure: true - Creates folders from subdirectory names
+
+---
+# PROVISIONING WORKFLOW
+# ====================
+# 
+# 1. Grafana startup:
+#    - Reads this provider.yaml file
+#    - Scans /etc/grafana/provisioning/dashboards for *.json files
+#    - Imports each file as a dashboard in the 'Infrastructure' folder
+#
+# 2. Subsequent changes:
+#    - Every 10 seconds, Grafana checks for new/modified/deleted files
+#    - Updates dashboards automatically without restart
+#    - If allowUiUpdates: true, UI changes are written back to files
+#
+# 3. Versioning:
+#    - All dashboard JSON files are version controlled in git
+#    - Changes are tracked and can be reviewed before deployment
+#    - Rollback is simple: revert git commit and wait for rescan
+#
+# BEST PRACTICES FOR PRODUCTION
+# =============================
+#
+# Version Control:
+#   ✓ Keep all dashboard JSON files in version control
+#   ✓ Tag releases with dashboard changes
+#   ✓ Review all dashboard modifications in PR before merge
+#
+# Editing Dashboards:
+#   Option A: Edit JSON files directly (requires valid Grafana JSON schema)
+#   Option B: Edit in Grafana UI (if allowUiUpdates: true), commit changes
+#   Option C: Use Grafana API to generate JSON, export to files
+#
+# Testing:
+#   ✓ Validate JSON syntax: `jq . <dashboard.json > /dev/null`
+#   ✓ Use ./scripts/dashboard-validate.sh to check compatibility
+#   ✓ Deploy to staging before production
+#
+# Backup & Recovery:
+#   ✓ Use ./scripts/dashboard-backup.sh to export current state
+#   ✓ Use ./scripts/dashboard-restore.sh to restore from backup
+#   ✓ Git history provides version control backup
+#
+# Monitoring:
+#   ✓ Watch Grafana logs for provisioning errors
+#   ✓ Check provisioning status in Grafana: Admin > Settings > Provisioning
+#
+# TROUBLESHOOTING
+# ===============
+#
+# Dashboards not loading:
+#   - Check Grafana logs: docker logs <grafana-container>
+#   - Verify path exists: ls -la /etc/grafana/provisioning/dashboards/
+#   - Verify JSON syntax: jq . provisioning/dashboards/*.json
+#   - Check file permissions: chmod 644 provisioning/dashboards/*.json
+#   - Restart Grafana service
+#
+# Changes not applying:
+#   - Verify updateIntervalSeconds is reasonable (10-300)
+#   - Check allowUiUpdates setting matches workflow
+#   - Monitor folder for file changes: watch ls -la /etc/grafana/provisioning/dashboards/
+#   - Check Grafana logs for provisioning errors
+#
+# Merge conflicts:
+#   - Use 'ours' or 'theirs' strategy on JSON files if needed
+#   - Better: use dashboard-export.sh to regenerate from UI
+#   - Document merge conflicts in git commit message
+
+---
+# ALTERNATIVE PROVISIONING METHODS (commented for reference)
+# ==========================================================
+
+# Option 2: Load dashboards from subdirectories
+# providers:
+#   - name: 'Infrastructure Dashboards'
+#     type: file
+#     folder: 'Infra'
+#     path: /etc/grafana/provisioning/dashboards/infra
+#   
+#   - name: 'Application Dashboards'
+#     type: file
+#     folder: 'Apps'
+#     path: /etc/grafana/provisioning/dashboards/apps
+#   
+#   - name: 'SLA Dashboards'
+#     type: file
+#     folder: 'SLA'
+#     path: /etc/grafana/provisioning/dashboards/sla
+
+# Option 3: Load from HTTP endpoint (requires Grafana sidecar or API)
+# providers:
+#   - name: 'Remote Dashboards'
+#     type: http
+#     url: https://grafana-central.example.com/api/dashboards/export
+#     auth:
+#       basic:
+#         username: admin
+#         password: ${GRAFANA_PASSWORD}
+
+# Option 4: Load from S3 (requires plugin)
+# providers:
+#   - name: 'S3 Dashboards'
+#     type: s3
+#     bucket: my-dashboards-bucket
+#     region: us-east-1
+#     auth:
+#       assumeRole: arn:aws:iam::123456789:role/GrafanaS3Access
