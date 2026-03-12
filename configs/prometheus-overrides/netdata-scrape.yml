@@ -1,0 +1,197 @@
+# Netdata Prometheus Scrape Configuration
+# ========================================
+# This file defines how Prometheus scrapes metrics from Netdata
+# 
+# Include this in prometheus.yml with:
+# scrape_configs:
+#   - <<: *netdata_scrape_config
+#
+# OR add directly to prometheus.yml:
+# 
+# scrape_configs:
+#   - job_name: 'netdata'
+#     << This file's content >>
+
+# Netdata Prometheus Exporter Configuration
+netdata_scrape_config: &netdata_scrape_config
+  job_name: 'netdata'
+  
+  # Netdata instance (Docker service name)
+  static_configs:
+    - targets: ['netdata:19999']
+      labels:
+        instance: 'netdata-monitor'
+        service: 'infrastructure'
+  
+  # Prometheus exporter path in Netdata
+  # Endpoint: http://netdata:19999/api/v1/allmetrics?format=prometheus
+  metrics_path: '/api/v1/allmetrics'
+  
+  # Query parameters for Prometheus format
+  params:
+    format: ['prometheus']
+  
+  # How often to scrape Netdata (balanced between accuracy and load)
+  scrape_interval: 15s
+  
+  # How long to wait for Netdata to respond
+  scrape_timeout: 10s
+  
+  # Relabel configurations (optional, for metric transformation)
+  relabel_configs:
+    # Keep only specific metric patterns (optional filtering)
+    # - source_labels: [__name__]
+    #   regex: '^(node_|container_|process_).*'
+    #   action: keep
+    
+    # Add custom labels to all metrics from Netdata
+    - target_label: job
+      replacement: 'netdata'
+    
+    - target_label: monitor_type
+      replacement: 'system_monitoring'
+  
+  # Metric relabeling (optional, for metric transformation AFTER scrape)
+  # This example drops less-important metrics to reduce cardinality
+  metric_relabel_configs:
+    # Example: Drop high-cardinality per-process metrics if needed
+    # - source_labels: [__name__]
+    #   regex: 'processes_.*'
+    #   action: drop
+    
+    # Example: Rename metrics for standardization
+    # - source_labels: [__name__]
+    #   regex: 'send_(.*)'
+    #   target_label: __name__
+    #   replacement: 'node_network_transmit_${1}'
+    #   action: replace
+
+# ============================================================================
+# NETDATA METRICS STRUCTURE
+# ============================================================================
+#
+# Netdata exposes metrics in the following format:
+#
+# <chart_family>_<metric_type>{<labels>} <value>
+#
+# Example:
+#   cpu_usage{dimension="user"} 15.5
+#   cpu_usage{dimension="system"} 5.2
+#   cpu_usage{dimension="iowait"} 2.1
+#
+# Common chart families (depends on Netdata plugins):
+#   - system.* (CPU, memory, processes, networking)
+#   - disk.* (disk space, I/O)
+#   - net.* (network interfaces)
+#   - proc.* (processes if plugins enabled)
+#   - apps.* (per-application metrics)
+#
+# When running as Prometheus exporter, Netdata converts these to
+# standard Prometheus format:
+#   - dimension labels become label_dimension
+#   - metric family name becomes __name__
+#
+# Example conversion:
+#   Netdata: cpu_usage{dimension="user",device="total"} 15.5
+#   Prometheus: node_cpu_usage{dimension="user",device="total"} 15.5
+#
+# ============================================================================
+
+# ============================================================================
+# EXPECTED METRICS FROM NETDATA
+# ============================================================================
+#
+# After Prometheus scrapes Netdata, you should see metrics like:
+#
+# CPU Metrics:
+#   - cpu_user_cpu (user mode CPU usage)
+#   - cpu_system_cpu (system mode CPU usage)
+#   - cpu_steal_cpu (stolen CPU in virtualized environment)
+#   - cpu_guest_cpu (guest CPU usage)
+#   - system_load (1, 5, 15 minute load averages)
+#
+# Memory Metrics:
+#   - system_ram_MemTotal (total memory)
+#   - system_ram_MemAvailable (available memory)
+#   - system_ram_MemFree (free memory)
+#   - system_ram_Buffers (buffer memory)
+#   - system_ram_Cached (cached memory)
+#   - system_ram_SwapTotal (total swap)
+#   - system_ram_SwapFree (free swap)
+#
+# Disk Metrics:
+#   - disk_space_avail (available disk space per mount)
+#   - disk_space_used (used disk space per mount)
+#   - disk_space_size (total disk size per mount)
+#   - diskio_reads (disk read operations)
+#   - diskio_writes (disk write operations)
+#   - diskio_read_bytes (bytes read)
+#   - diskio_write_bytes (bytes written)
+#
+# Network Metrics:
+#   - net_net_received (bytes received per interface)
+#   - net_net_sent (bytes sent per interface)
+#   - net_net_packets_in (packets received)
+#   - net_net_packets_out (packets sent)
+#   - net_net_fifo_in (RX FIFO errors)
+#   - net_net_fifo_out (TX FIFO errors)
+#
+# Process Metrics (if apps plugin enabled):
+#   - apps_cpu (per-process CPU usage)
+#   - apps_memory (per-process memory)
+#   - apps_swap (per-process swap)
+#   - apps_threads (per-process thread count)
+#
+# ============================================================================
+
+# ============================================================================
+# VERIFICATION
+# ============================================================================
+#
+# To verify Netdata is properly integrated:
+#
+# 1. Check endpoint connectivity:
+#    curl http://localhost:19999/api/v1/allmetrics?format=prometheus | head -20
+#
+# 2. Check Prometheus UI:
+#    - Status → Targets
+#    - Look for 'netdata' job with status UP
+#    - Click on 'netdata' to see scrape statistics
+#
+# 3. Query metrics in Prometheus:
+#    - Click on Graph tab
+#    - Type 'cpu_' and select a metric
+#    - View the graph
+#
+# 4. Check alert rules:
+#    - Status → Rules
+#    - Look for 'HighCpuUsage', 'HighMemoryUsage', etc.
+#    - These rules should be evaluating metrics from Netdata
+#
+# ============================================================================
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+#
+# Problem: Netdata target shows DOWN
+# Solution:
+#   - Check Docker logs: docker-compose logs netdata
+#   - Verify [prometheus] is enabled in netdata.conf
+#   - Test endpoint: curl http://localhost:19999/api/v1/allmetrics?format=prometheus
+#   - Check network: docker network inspect monitoring-network
+#
+# Problem: Missing metrics in Prometheus
+# Solution:
+#   - Verify scrape is happening: check Prometheus UI for last scrape time
+#   - Check scrape intervals match
+#   - Enable debug logging in Prometheus
+#   - Verify metrics_path and format are correct
+#
+# Problem: High cardinality warning
+# Solution:
+#   - Use metric_relabel_configs to drop high-cardinality metrics
+#   - Reduce process-level metrics granularity
+#   - Use relabel_configs to filter only needed metrics
+#
+# ============================================================================

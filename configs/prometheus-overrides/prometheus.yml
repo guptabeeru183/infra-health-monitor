@@ -42,6 +42,36 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
 
+  # Uptime Kuma - Availability monitoring
+  # Monitors service uptime and generates availability metrics
+  - job_name: 'uptime-kuma'
+    scrape_interval: 30s  # Uptime checks are less frequent than system metrics
+    static_configs:
+      - targets: ['uptime-kuma-exporter:5000']  # Custom exporter bridge
+        labels:
+          service: 'uptime-monitoring'
+          monitor_type: 'availability'
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'uptime-kuma'
+
+  # OpenTelemetry Collector - Metrics from OTLP protocol
+  # Collects metrics exported by OTEL SDKs and re-exports in Prometheus format
+  - job_name: 'otel-collector'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['otel-collector:8888']
+        labels:
+          service: 'observability'
+          monitor_type: 'telemetry'
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'otel-collector'
+
   # Add your application monitoring targets here
   # Example for a custom application:
   # - job_name: 'my-app'
