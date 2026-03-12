@@ -1,0 +1,59 @@
+# Docker Compose volumes and data
+docker-volumes/
+data/
+logs/
+
+# Environment files (but keep .env.example)
+.env
+.env.local
+.env.production
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+
+# Docker build cache
+.docker/
+
+# Git submodule pinned versions (auto-generated)
+.submodule-pins
+
+# Prometheus snapshots and WAL
+prometheus-wal/
+snapshots/
+
+# Grafana backups
+grafana-backups/
+
+# SigNoz ClickHouse data (will be in named volume)
+clickhouse-data/
+
+# Test outputs
+test-results/
+coverage/
+
+# Sensitive files
+*.key
+*.pem
+secrets/

@@ -1,0 +1,31 @@
+# Git Submodules Configuration for Infra Health Monitor
+# 
+# This file declares the upstream monitoring projects as submodules.
+# They are checked out as independent read-only directories.
+# All customizations are in configs/ directory to avoid merge conflicts.
+#
+# To initialize all submodules after cloning:
+#   git submodule update --init --recursive
+#
+# To update all submodules to latest remote version:
+#   git submodule update --remote --recursive
+
+# Prometheus + Grafana + Alertmanager stack
+[submodule "stack/dockprom"]
+	path = stack/dockprom
+	url = https://github.com/stefanprodan/dockprom.git
+
+# Real-time system monitoring
+[submodule "stack/netdata"]
+	path = stack/netdata
+	url = https://github.com/netdata/netdata.git
+
+# Logs, metrics, and traces
+[submodule "stack/signoz"]
+	path = stack/signoz
+	url = https://github.com/SigNoz/signoz.git
+
+# Uptime monitoring
+[submodule "stack/uptime-kuma"]
+	path = stack/uptime-kuma
+	url = https://github.com/louislam/uptime-kuma.git
