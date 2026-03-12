@@ -1,0 +1,55 @@
+# Infra Health Monitor - Submodule Version Pinning
+# 
+# This file tracks the pinned versions of all upstream monitoring projects.
+# Format: submodule_name=version_tag
+# 
+# To update to latest versions:
+#   git submodule update --remote --recursive
+#   Then test and update versions here
+#
+# To revert to pinned versions:
+#   scripts/pin-submodule-versions.sh
+#
+# Last Updated: 2026-03-12
+# Update Frequency: Weekly review, monthly testing
+
+# Core Monitoring Stack (Prometheus + Grafana + Alertmanager)
+dockprom=v9.2.0
+
+# Real-time System Monitoring
+netdata=v2.9.0
+
+# Logs, Metrics, and Traces Observability
+signoz=v0.115.0
+
+# Uptime and Availability Monitoring
+uptime-kuma=2.2.1
+
+# ============================================================================
+# VERSION UPGRADE NOTES
+# ============================================================================
+#
+# When upgrading versions:
+# 1. Test in feature branch:
+#    git checkout -b upgrade/submodules
+#    git submodule update --remote
+#    Update this file with new versions
+#    make test
+#
+# 2. If all tests pass, commit:
+#    git add .gitmodules stack/ SUBMODULE_VERSIONS.txt
+#    git commit -m "Upgrade submodules to $(cat SUBMODULE_VERSIONS.txt)"
+#
+# 3. Document breaking changes in CHANGELOG.md
+#
+# 4. Merge to main when ready for deployment
+
+# ============================================================================
+# VERSION HISTORY
+# ============================================================================
+#
+# 2026-03-12: Initial submodule setup
+#   - dockprom: v9.2.0
+#   - netdata: v2.9.0
+#   - signoz: v0.115.0
+#   - uptime-kuma: 2.2.1
