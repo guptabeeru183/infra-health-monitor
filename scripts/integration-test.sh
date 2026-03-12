@@ -171,7 +171,13 @@ test_metric_ingestion() {
     echo ""
     echo "Checking OpenTelemetry Collector metrics..."
     check_metric "otelcol_" || true
-    
+
+    # Check that logs and traces are being received by the collector
+    echo ""
+    echo "Checking OTEL collector log/trace counters..."
+    check_metric "otelcol_log_records_received" || true
+    check_metric "otelcol_spans_received" || true
+
     # Count total active metrics
     echo ""
     metric_count=$(curl -s "$PROMETHEUS_URL/api/v1/query?query=up" 2>/dev/null | grep -o '"metric":' | wc -l)
@@ -376,6 +382,17 @@ main() {
     test_inter_service_communication
     test_data_flow
     
+    # Generate sample telemetry to exercise logging/tracing pipelines
+    echo_header "Phase 8: Generate Sample Telemetry"
+    if [ -x "$(dirname "$0")/send-sample-telemetry.sh" ]; then
+        echo "Sending sample logs and traces to OTEL collector..."
+        "$(dirname "$0")/send-sample-telemetry.sh" || test_warn "Failed to send sample telemetry"
+        # give collector a moment to process
+        sleep 2
+    else
+        test_warn "Sample telemetry generator script not found or not executable"
+    fi
+
     # Print summary and exit with appropriate code
     print_summary
     exit $?

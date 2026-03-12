@@ -1,0 +1,20 @@
+# Example monitor definitions for Uptime Kuma
+# This YAML file can be imported via the Uptime Kuma API or used as a reference
+# for creating monitors manually.
+
+monitors:
+  - name: "Example HTTP Service"
+    type: http
+    url: "https://example.com/health"
+    interval: 60
+    threshold: 200
+
+  - name: "Local TCP Port"
+    type: tcp
+    host: "localhost"
+    port: 22
+    interval: 60
+
+# Additional monitor types: ping, dns, dns-tcp, websocket
+# See Uptime Kuma documentation for the full schema:
+# https://github.com/louislam/uptime-kuma#using-api
