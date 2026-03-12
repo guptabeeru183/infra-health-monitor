@@ -1,0 +1,321 @@
+{
+  "dashboard": {
+    "title": "Uptime and Availability",
+    "description": "Service availability, SLA compliance, and incident tracking",
+    "tags": [
+      "uptime",
+      "availability",
+      "sla",
+      "kuma"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "1m",
+    "time": {
+      "from": "now-30d",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Monitor Selection",
+        "type": "singlestat",
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Current Uptime Status",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 0,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "avg(uptime_monitor_up{monitor_name=~\"$monitor\"}) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 95
+                },
+                {
+                  "color": "green",
+                  "value": 99
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Average Response Time",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 8,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "avg(uptime_monitor_response_time_ms{monitor_name=~\"$monitor\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 500
+                },
+                {
+                  "color": "red",
+                  "value": 2000
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "30-Day Uptime Percentage",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 8,
+          "x": 16,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "avg(uptime_monitor_uptime_percent{monitor_name=~\"$monitor\", interval=\"30d\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 95
+                },
+                {
+                  "color": "green",
+                  "value": 99.9
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Uptime Trend (7 Days)",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "uptime_monitor_up{monitor_name=~\"$monitor\"}",
+            "refId": "A",
+            "legendFormat": "{{ monitor_name }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "lineWidth": 2,
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Response Time Trend",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "uptime_monitor_response_time_ms{monitor_name=~\"$monitor\"}",
+            "refId": "A",
+            "legendFormat": "{{ monitor_name }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Uptime by Monitor (30-Day SLA)",
+        "type": "piechart",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 15
+        },
+        "targets": [
+          {
+            "expr": "avg(uptime_monitor_uptime_percent{interval=\"30d\"})",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Downtime Events (Last 30 Days)",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 15
+        },
+        "targets": [
+          {
+            "expr": "count_over_time((uptime_monitor_up{monitor_name=~\"$monitor\"} == 0)[30d:1h])",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Monitor Health Status",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 23
+        },
+        "targets": [
+          {
+            "expr": "count(uptime_monitor_up{monitor_name=~\"$monitor\"} == 1)",
+            "refId": "A",
+            "legendFormat": "Healthy"
+          },
+          {
+            "expr": "count(uptime_monitor_up{monitor_name=~\"$monitor\"} == 0)",
+            "refId": "B",
+            "legendFormat": "Down"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "monitor",
+          "type": "query",
+          "datasource": "Uptime Kuma",
+          "definition": "label_values(uptime_monitor_up, monitor_name)",
+          "description": "Select uptime monitor",
+          "multi": true,
+          "refresh": "on_time_interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Downtime Events",
+          "datasource": "Uptime Kuma",
+          "expr": "changes(uptime_monitor_up{monitor_name=~\"$monitor\"}[5m]) > 0",
+          "textFormat": "Downtime: {{ monitor_name }}"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

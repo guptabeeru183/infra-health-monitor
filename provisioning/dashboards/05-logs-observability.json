@@ -1,0 +1,323 @@
+{
+  "dashboard": {
+    "title": "Logging and Observability",
+    "description": "Distributed tracing, logs aggregation, and observability metrics",
+    "tags": [
+      "logging",
+      "tracing",
+      "observability",
+      "logs",
+      "traces"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Observability Overview",
+        "type": "text",
+        "gridPos": {
+          "h": 2,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "options": {
+          "content": "# Logging and Observability Dashboard\nCentralized view of logs, traces, and observability metrics across all services and infrastructure"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Spans Ingested",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 2
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_received_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Total Traces",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 2
+        },
+        "targets": [
+          {
+            "expr": "count(count by(trace_id) (otel_span_duration_seconds_bucket))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Span Processing Latency",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 2
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(otel_collector_process_duration_bucket[5m])) by (le)) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 100
+                },
+                {
+                  "color": "red",
+                  "value": 500
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "OTEL Collector Status",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 2
+        },
+        "targets": [
+          {
+            "expr": "count(up{job=\"otel-collector\"} == 1)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Span Ingestion Rate",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_received_total[1m])) by (otel_collection_method)",
+            "refId": "A",
+            "legendFormat": "{{ otel_collection_method }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Error Span Rate",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_error_total[1m])) by (service_name)",
+            "refId": "A",
+            "legendFormat": "{{ service_name }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Trace Collection Efficiency",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 14
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_received_total[5m])) by (sampling_status)",
+            "refId": "A",
+            "legendFormat": "{{ sampling_status }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Top Error Services",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 22
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(otel_spans_error_total[5m])) by (service_name))",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Span Attributes Distribution",
+        "type": "heatmap",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 22
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_span_duration_seconds_bucket[5m])) by (le, service_name)",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "datasource": "SigNoz",
+          "definition": "label_values(otel_spans_received_total, service_name)",
+          "description": "Select service for detailed analysis",
+          "multi": false,
+          "refresh": "on_time_interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "errors",
+          "datasource": "SigNoz",
+          "expr": "increase(otel_spans_error_total[5m]) > 0",
+          "textFormat": "Error spike: {{ service_name }}"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

@@ -1,0 +1,348 @@
+{
+  "dashboard": {
+    "title": "Application Monitoring",
+    "description": "Application performance, traces, and service health",
+    "tags": [
+      "application",
+      "performance",
+      "traces",
+      "otel",
+      "signoz"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Selection",
+        "type": "singlestat",
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Request Rate",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_received_total{service_name=~\"$service\"}[1m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "mappings": []
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_error_total{service_name=~\"$service\"}[1m])) / sum(rate(otel_spans_received_total{service_name=~\"$service\"}[1m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "P50 Latency",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(otel_span_duration_seconds_bucket{service_name=~\"$service\"}[5m])) by (le)) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 100
+                },
+                {
+                  "color": "red",
+                  "value": 500
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "P95 Latency",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(otel_span_duration_seconds_bucket{service_name=~\"$service\"}[5m])) by (le)) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 250
+                },
+                {
+                  "color": "red",
+                  "value": 1000
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Request Rate by Service",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_received_total{service_name=~\"$service\"}[1m])) by (service_name)",
+            "refId": "A",
+            "legendFormat": "{{ service_name }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Error Rate by Service",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(otel_spans_error_total{service_name=~\"$service\"}[1m])) by (service_name)",
+            "refId": "A",
+            "legendFormat": "{{ service_name }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "rps",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Latency Histogram",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 15
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(otel_span_duration_seconds_bucket{service_name=~\"$service\"}[5m])) by (le)) * 1000",
+            "refId": "A",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(otel_span_duration_seconds_bucket{service_name=~\"$service\"}[5m])) by (le)) * 1000",
+            "refId": "B",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(otel_span_duration_seconds_bucket{service_name=~\"$service\"}[5m])) by (le)) * 1000",
+            "refId": "C",
+            "legendFormat": "p99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Top Slow Requests (P99)",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 23
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(otel_span_duration_seconds_sum{service_name=~\"$service\"}[5m])) by (span_name))",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Service Dependencies",
+        "type": "nodeGraph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 23
+        },
+        "targets": [
+          {
+            "expr": "otel_service_dependency_total{source_service=~\"$service\"}",
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "datasource": "SigNoz",
+          "definition": "label_values(otel_spans_received_total, service_name)",
+          "description": "Select application service",
+          "multi": true,
+          "refresh": "on_time_interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "changes(otel_service_version{service_name=~\"$service\"}[5m]) > 0",
+          "textFormat": "Deployment: {{ service_name }}"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}

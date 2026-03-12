@@ -1,0 +1,185 @@
+apiVersion: 1
+
+# Datasource provisioning for Infra Health Monitor
+# Automatically configures all data sources when Grafana starts
+# Reference: https://grafana.com/docs/grafana/latest/administration/provisioning/
+
+datasources:
+  # ============================================================================
+  # Prometheus Data Source
+  # ============================================================================
+  # Primary source for system metrics, application metrics, and alert rules
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    password: ""
+    user: ""
+    database: ""
+    basicAuth: false
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      # Prometheus scrape interval (must match prometheus.yml)
+      # Lower values = more granularity, higher values = better performance
+      
+      # Query timeout - maximum time Prometheus will spend evaluating a query
+      maxDataPoints: 43200
+      # Maximum data points to return (daily granularity × 120 days)
+      
+    # Credentials (if using authentication)
+    # basicAuth: true
+    # basicAuthUser: admin
+    # basicAuthPassword: ${PROMETHEUS_PASSWORD}
+    
+    fieldConfig:
+      defaults:
+        unit: short
+
+  # ============================================================================
+  # SigNoz Data Source (via OpenTelemetry via Prometheus exporter)
+  # ============================================================================
+  # Application traces, logs, and telemetry metrics
+  - name: SigNoz
+    type: prometheus
+    access: proxy
+    url: http://otel-collector:8888
+    # SigNoz OpenTelemetry Collector exposes Prometheus-compatible metrics
+    # Includes: traces aggregated as metrics, span latencies, error rates
+    password: ""
+    user: ""
+    database: ""
+    basicAuth: false
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      
+    # Note: SigNoz traces are accessed via SigNoz UI, not Grafana
+    # But metrics are available through OTEL Collector export
+    
+  # ============================================================================
+  # ClickHouse Data Source (Optional - for direct trace queries)
+  # ============================================================================
+  # Uncomment to enable direct ClickHouse queries from Grafana
+  # Requires: Grafana ClickHouse plugin
+  # - name: ClickHouse
+  #   type: clickhouse-datasource
+  #   access: proxy
+  #   url: http://clickhouse:8123
+  #   password: ""
+  #   user: default
+  #   database: signoz
+  #   basicAuth: false
+  #   isDefault: false
+  #   editable: true
+  #   jsonData:
+  #     defaultDatabase: signoz
+  #     tlsAuth: false
+  #     tlsAuthWithCACert: false
+
+  # ============================================================================
+  # Uptime Kuma Data Source (via Prometheus exporter)
+  # ============================================================================
+  # Availability and uptime monitoring metrics
+  - name: Uptime Kuma
+    type: prometheus
+    access: proxy
+    url: http://uptime-kuma-exporter:5000
+    # Custom exporter bridge: uptime-kuma-exporter.py
+    # Exposes metrics: uptime_monitor_up, uptime_monitor_response_time_ms, etc.
+    password: ""
+    user: ""
+    database: ""
+    basicAuth: false
+    isDefault: false
+    editable: true
+    jsonData:
+      timeInterval: 30s
+      # Uptime Kuma metrics are scraped every 30 seconds (less frequent)
+
+  # ============================================================================
+  # Alertmanager Data Source (Optional - for alert listing)
+  # ============================================================================
+  # Uncomment if using Grafana Alert Management plugin
+  # - name: Alertmanager
+  #   type: alertmanager
+  #   access: proxy
+  #   url: http://alertmanager:9093
+  #   password: ""
+  #   user: ""
+  #   database: ""
+  #   basicAuth: false
+  #   isDefault: false
+  #   editable: true
+  #   jsonData:
+  #     implementation: prometheus
+
+  # ============================================================================
+  # Loki Data Source (Optional - for log aggregation)
+  # ============================================================================
+  # Uncomment if using Loki for centralized logging
+  # - name: Loki
+  #   type: loki
+  #   access: proxy
+  #   url: http://loki:3100
+  #   password: ""
+  #   user: ""
+  #   database: ""
+  #   basicAuth: false
+  #   isDefault: false
+  #   editable: true
+  #   jsonData:
+  #     maxLines: 1000
+
+  # ============================================================================
+  # Jaeger Data Source (Optional - for distributed tracing)
+  # ============================================================================
+  # Uncomment if using Jaeger UI integration
+  # - name: Jaeger
+  #   type: jaeger
+  #   access: proxy
+  #   url: http://jaeger:16686
+  #   password: ""
+  #   user: ""
+  #   database: ""
+  #   basicAuth: false
+  #   isDefault: false
+  #   editable: true
+
+# ============================================================================
+# Data Source Configuration Details
+# ============================================================================
+#
+# Access modes:
+#   - proxy: Grafana backend proxies the request (more secure)
+#   - direct: Browser connects directly (faster, potential CORS issues)
+#
+# Enabled data sources in this config:
+#   1. Prometheus (default) - All system and application metrics
+#   2. SigNoz (OTEL Collector) - Application telemetry metrics
+#   3. Uptime Kuma - Availability monitoring metrics
+#
+# Authentication:
+#   - basicAuth: Set to true to enable username/password
+#   - Use Grafana secrets for credentials: ${GRAFANA_DS_PASSWORD}
+#   - Reference: https://grafana.com/docs/grafana/latest/datasource-provisioning/
+#
+# Health Check Verification:
+#   - After Grafana starts, verify datasources:
+#     curl http://grafana:3000/api/datasources
+#   - Test connection: 
+#     curl http://grafana:3000/api/datasources/<id>/health
+#
+# Troubleshooting:
+#   - Connection refused: Check if target service is running
+#   - Timeout: Increase timeout or check network connectivity
+#   - Authorization failed: Verify credentials in jsonData
+#   - TLS errors: Set tlsAuth/tlsAuthWithCACert if needed
+#
+# Dashboard Integration:
+#   - Dashboards reference datasources by name ("Prometheus", "SigNoz")
+#   - Ensure datasource names match dashboard datasource definitions
+#   - Update dashboard datasource references if name changes
+#

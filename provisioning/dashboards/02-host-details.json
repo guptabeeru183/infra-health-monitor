@@ -1,0 +1,455 @@
+{
+  "dashboard": {
+    "title": "Host Details",
+    "description": "Detailed host-level metrics and resource utilization",
+    "tags": [
+      "host",
+      "details",
+      "system",
+      "resources"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Host Selection",
+        "type": "singlestat",
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "options": {
+          "textMode": "auto",
+          "colorMode": "background"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Current CPU Usage",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\", instance=~\"$instance\"}[5m])) * 100)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "red",
+                  "value": 85
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Current Memory Usage",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "100 * (1 - (node_memory_MemAvailable_bytes{instance=~\"$instance\"} / node_memory_MemTotal_bytes{instance=~\"$instance\"}))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 90
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Current Disk Usage",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "100 * (1 - (node_filesystem_avail_bytes{instance=~\"$instance\", mountpoint=\"/\"} / node_filesystem_size_bytes{instance=~\"$instance\", mountpoint=\"/\"}))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 85
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "System Uptime",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 3
+        },
+        "targets": [
+          {
+            "expr": "node_boot_time_seconds{instance=~\"$instance\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "timestamp:unix_ms",
+            "mappings": []
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "CPU Usage by Mode",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "rate(node_cpu_seconds_total{instance=~\"$instance\"}[5m]) * 100",
+            "refId": "A",
+            "legendFormat": "{{ mode }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max"
+            ],
+            "displayMode": "table"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Memory Breakdown",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 7
+        },
+        "targets": [
+          {
+            "expr": "node_memory_MemTotal_bytes{instance=~\"$instance\"} / 1024 / 1024 / 1024",
+            "refId": "A",
+            "legendFormat": "Total"
+          },
+          {
+            "expr": "node_memory_MemAvailable_bytes{instance=~\"$instance\"} / 1024 / 1024 / 1024",
+            "refId": "B",
+            "legendFormat": "Available"
+          },
+          {
+            "expr": "(node_memory_MemTotal_bytes{instance=~\"$instance\"} - node_memory_MemAvailable_bytes{instance=~\"$instance\"}) / 1024 / 1024 / 1024",
+            "refId": "C",
+            "legendFormat": "Used"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "GB",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Disk I/O",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 15
+        },
+        "targets": [
+          {
+            "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\"}[5m]) / 1024 / 1024",
+            "refId": "A",
+            "legendFormat": "Read {{ device }}"
+          },
+          {
+            "expr": "rate(node_disk_write_bytes_total{instance=~\"$instance\"}[5m]) / 1024 / 1024",
+            "refId": "B",
+            "legendFormat": "Write {{ device }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "MB/s",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Network Traffic",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 15
+        },
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\", device!=\"lo\"}[5m]) / 1024 / 1024",
+            "refId": "A",
+            "legendFormat": "RX {{ device }}"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\", device!=\"lo\"}[5m]) / 1024 / 1024",
+            "refId": "B",
+            "legendFormat": "TX {{ device }}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "MB/s",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Process Count",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 23
+        },
+        "targets": [
+          {
+            "expr": "node_procs_running{instance=~\"$instance\"}",
+            "refId": "A",
+            "legendFormat": "Running"
+          },
+          {
+            "expr": "node_procs_blocked{instance=~\"$instance\"}",
+            "refId": "B",
+            "legendFormat": "Blocked"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list"
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Recent Alerts",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 23
+        },
+        "targets": [
+          {
+            "expr": "ALERTS{instance=~\"$instance\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "custom": {
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              }
+            }
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "definition": "label_values(node_cpu_seconds_total, instance)",
+          "description": "Select host instance",
+          "multi": false,
+          "refresh": "on_time_interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Critical Alerts",
+          "datasource": "Prometheus",
+          "expr": "ALERTS{severity=\"critical\", instance=~\"$instance\"}",
+          "textFormat": "{{ alertname }}"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}
