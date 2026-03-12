@@ -76,6 +76,66 @@ groups:
           summary: "Netdata is unreachable"
           description: "Netdata monitoring agent on {{ $labels.instance }} has been down for more than 5 minutes"
 
+      # High load average
+      - alert: HighLoadAverage
+        expr: node_load1 > 1.5 * count(node_cpu_seconds_total{mode="idle"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High load average on {{ $labels.instance }}"
+          description: "One‑minute load average significantly exceeds CPU count"
+
+      # Disk I/O high
+      - alert: HighDiskIO
+        expr: rate(node_disk_io_time_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk I/O on {{ $labels.instance }}"
+          description: "Disk I/O utilization above 80%"
+
+      # Network errors
+      - alert: NetworkErrors
+        expr: increase(node_network_receive_errs_total[5m]) > 0 or increase(node_network_transmit_errs_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Network interface errors on {{ $labels.instance }}"
+          description: "Packet errors detected on network interface"
+
+      # Example generic service down alert (replace job label as needed)
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down on {{ $labels.instance }}"
+          description: "No scrape target for service {{ $labels.job }} has been up for 2 minutes"
+
+      # Example service restart frequency (requires `process_start_time_seconds` metric)
+      - alert: ServiceRestarting
+        expr: increase(process_start_time_seconds[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Service {{ $labels.job }} restarted recently"
+          description: "A process start event detected; verify for crash loops."
+
+      # Placeholder for application error rate (custom metric)
+      - alert: HighErrorRate
+        expr: rate(app_errors_total[5m]) / rate(app_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{ $labels.job }}"
+          description: "More than 5% of requests are errors."
+
 # Phase 3 Setup Note:
 # ==================
 # Basic alert rules are defined above. More comprehensive alerts will be added in Phase 7.
@@ -99,3 +159,64 @@ groups:
 # - Uptime metrics: Uptime Kuma (Phase 4)
 # - Application metrics: Custom exporters (Phase 4+)
 # - Observability: SigNoz (Phase 6)
+
+# ----------------------------
+# Monitoring infrastructure alerts
+# ----------------------------
+
+- name: Monitoring Health
+  interval: 1m
+  rules:
+    # Prometheus scrape failure (no targets up)
+    - alert: PrometheusScrapeFailure
+      expr: up{job="prometheus"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Prometheus not scraping" 
+        description: "All Prometheus scrape targets are down or unreachable."
+
+    # Prometheus high cardinality
+    - alert: PrometheusHighCardinality
+      expr: prometheus_tsdb_head_series > 1000000
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High series cardinality in Prometheus"
+        description: "More than 1M series in head -- may impact performance."
+
+    # Grafana availability
+    - alert: GrafanaDown
+      expr: up{job="grafana"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Grafana is down"
+        description: "Grafana instance is not responding to scrapes."
+
+    # SigNoz collector failures (placeholder)
+    - alert: SigNozCollectorDown
+      expr: up{job="otel-collector"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "OpenTelemetry Collector down"
+        description: "The OTEL collector (SigNoz pipeline) is unreachable."
+
+    # Uptime Kuma exporter failures
+    - alert: UptimeKumaExporterDown
+      expr: up{job="uptime-kuma"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Uptime Kuma exporter down"
+        description: "Uptime Kuma metrics exporter not reachable."
+
+    # Alertmanager failures (already included above)
+
+# End of additional monitoring alerts

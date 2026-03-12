@@ -1,0 +1,10 @@
+{{ define "email.default" }}
+{{ range .Alerts }}
+Alert: {{ .Annotations.summary }}
+Severity: {{ .Labels.severity }}
+{{ if .Labels.instance }}Instance: {{ .Labels.instance }}
+{{ end }}
+{{ .Annotations.description }}
+
+{{ end }}
+{{ end }}

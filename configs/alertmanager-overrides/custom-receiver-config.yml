@@ -1,0 +1,8 @@
+# Additional receiver configuration can be placed here and imported in alertmanager.yml
+# e.g. external webhooks, custom templates, etc.
+# Example:
+# receivers:
+#   - name: 'pagerduty-critical'
+#     pagerduty_configs:
+#       - service_key: '${PAGERDUTY_SERVICE_KEY}'
+#         severity: 'critical'

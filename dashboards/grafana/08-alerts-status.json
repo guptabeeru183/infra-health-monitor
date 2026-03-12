@@ -1,0 +1,34 @@
+{
+  "id": null,
+  "title": "Alert Status",
+  "tags": ["alerting"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Firing Alerts",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [
+        {"expr": "count(alerts{state=\"firing\"})", "refId": "A"}
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Silenced Alerts",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [
+        {"expr": "count(alerts{state=\"silenced\"})", "refId": "A"}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Alert Firing Rate",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
+      "targets": [
+        {"expr": "rate(alerts_fired_total[5m])", "refId": "A"}
+      ]
+    }
+  ]
+}

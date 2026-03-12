@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: true
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+
+receivers:
+  - name: 'default'
+  - name: 'critical-alerts'
+    email_configs: []          # populate in overrides or via templates
+    slack_configs: []
+    pagerduty_configs: []
+  - name: 'warning-alerts'
+    email_configs: []
+    slack_configs: []
+    pagerduty_configs: []
+
+inhibit_rules:
+  # Prevent warning alerts when a corresponding critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
