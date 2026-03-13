@@ -83,7 +83,7 @@ services:
       - GF_SECURITY_LOGIN_ATTEMPTS=5
       - GF_SECURITY_LOGIN_MAX_LIFETIME=86400000
       - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_INSTALL_PLUGINS=
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
