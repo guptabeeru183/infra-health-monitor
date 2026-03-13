@@ -16,6 +16,18 @@ help:
 	@echo "  make status         - Show service status"
 	@echo "  make health         - Check service health"
 	@echo ""
+	@echo "Testing:"
+	@echo "  make test-setup     - Setup environment for testing"
+	@echo "  make test-all       - Run complete test suite"
+	@echo "  make test-stack     - Test service health and connectivity"
+	@echo "  make test-performance - Run performance baseline tests"
+	@echo "  make test-integration - Test end-to-end workflows"
+	@echo "  make test-load      - Run load and throughput tests"
+	@echo "  make test-stress    - Run stress and failure tests"
+	@echo "  make test-dev       - Run development-focused tests"
+	@echo "  make test-ci        - Run CI/CD testing pipeline"
+	@echo "  make test-cleanup   - Clean up test results"
+	@echo ""
 	@echo "Maintenance:"
 	@echo "  make update         - Update all submodules"
 	@echo "  make clean          - Remove volumes and clean up"
@@ -23,7 +35,7 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make validate       - Validate docker-compose.yml"
-	@echo "  make test           - Run integration tests"
+	@echo "  make test           - Run integration tests (legacy)"
 	@echo ""
 
 # Initialize: submodules and environment
@@ -140,6 +152,74 @@ test:
 	else \
 		echo "Test suite not yet implemented"; \
 	fi
+
+# Comprehensive testing suite
+test-all: test-stack test-performance test-integration test-load test-stress
+	@echo "✓ All tests completed"
+
+# Individual test suites
+test-stack:
+	@echo "Running stack service tests..."
+	@if [ -f "scripts/test-stack-services.sh" ]; then \
+		bash scripts/test-stack-services.sh; \
+	else \
+		echo "Stack test script not found"; \
+	fi
+
+test-performance:
+	@echo "Running performance tests..."
+	@if [ -f "scripts/performance-test.sh" ]; then \
+		bash scripts/performance-test.sh; \
+	else \
+		echo "Performance test script not found"; \
+	fi
+
+test-integration:
+	@echo "Running integration tests..."
+	@if [ -f "scripts/test-integration.sh" ]; then \
+		bash scripts/test-integration.sh; \
+	else \
+		echo "Integration test script not found"; \
+	fi
+
+test-load:
+	@echo "Running load tests..."
+	@if [ -f "scripts/load-test.sh" ]; then \
+		bash scripts/load-test.sh; \
+	else \
+		echo "Load test script not found"; \
+	fi
+
+test-stress:
+	@echo "Running stress tests..."
+	@if [ -f "scripts/stress-test.sh" ]; then \
+		bash scripts/stress-test.sh; \
+	else \
+		echo "Stress test script not found"; \
+	fi
+
+# Test environment management
+test-setup: up
+	@echo "Waiting for services to be ready for testing..."
+	@sleep 60
+	@$(MAKE) health
+
+test-cleanup:
+	@echo "Cleaning up test results..."
+	@if [ -d "test-results" ]; then \
+		rm -rf test-results; \
+		echo "✓ Test results cleaned up"; \
+	else \
+		echo "No test results to clean"; \
+	fi
+
+# CI/CD testing pipeline
+test-ci: validate test-setup test-all test-cleanup
+	@echo "✓ CI/CD testing pipeline completed"
+
+# Development testing (faster, focused)
+test-dev: test-stack test-integration
+	@echo "✓ Development tests completed"
 
 # Backup configuration (requires backup scripts)
 backup:
