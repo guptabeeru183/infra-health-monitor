@@ -24,6 +24,9 @@ help:
 	@echo "  make test-integration - Test end-to-end workflows"
 	@echo "  make test-load      - Run load and throughput tests"
 	@echo "  make test-stress    - Run stress and failure tests"
+	@echo "  make test-security  - Run security assessment tests"
+	@echo "  make test-user-workflows - Test user experience workflows"
+	@echo "  make test-backup-restore - Test backup and restore procedures"
 	@echo "  make test-dev       - Run development-focused tests"
 	@echo "  make test-ci        - Run CI/CD testing pipeline"
 	@echo "  make test-cleanup   - Clean up test results"
@@ -220,6 +223,33 @@ test-ci: validate test-setup test-all test-cleanup
 # Development testing (faster, focused)
 test-dev: test-stack test-integration
 	@echo "✓ Development tests completed"
+
+# Security testing
+test-security:
+	@echo "Running security tests..."
+	@if [ -f "scripts/test-security.sh" ]; then \
+		bash scripts/test-security.sh; \
+	else \
+		echo "Security test script not found"; \
+	fi
+
+# User workflow testing
+test-user-workflows:
+	@echo "Running user workflow tests..."
+	@if [ -f "scripts/test-user-workflows.sh" ]; then \
+		bash scripts/test-user-workflows.sh; \
+	else \
+		echo "User workflow test script not found"; \
+	fi
+
+# Backup and restore testing
+test-backup-restore:
+	@echo "Running backup and restore tests..."
+	@if [ -f "scripts/test-backup-restore.sh" ]; then \
+		bash scripts/test-backup-restore.sh; \
+	else \
+		echo "Backup/restore test script not found"; \
+	fi
 
 # Backup configuration (requires backup scripts)
 backup:
