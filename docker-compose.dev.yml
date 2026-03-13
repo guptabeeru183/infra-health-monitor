@@ -4,8 +4,6 @@
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 #
 
-version: '3.8'
-
 services:
   prometheus:
     # Development: More verbose logging, shorter retention
@@ -24,7 +22,7 @@ services:
     # Development: Disable authentication, enable plugin installation
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-clockpanel-panel,grafana-piechart-panel
+      - GF_INSTALL_PLUGINS=
       - GF_DEVELOPMENT=true
     volumes:
       # Bind mount for easy provisioning updates
@@ -36,7 +34,7 @@ services:
     volumes:
       - ./configs/prometheus-overrides/alertmanager.yml:/etc/alertmanager/config.yml:ro
 
-  otel-collector:
+  signoz-otel-collector:
     # Development: Verbose logging, lower sampling
     environment:
       - LOG_LEVEL=info

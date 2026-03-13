@@ -5,8 +5,6 @@
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
 #
 
-version: '3.8'
-
 services:
   prometheus:
     # Production: Long retention, minimal logging
@@ -73,7 +71,7 @@ services:
           cpus: '0.5'
           memory: 1G
 
-  otel-collector:
+  signoz-otel-collector:
     # Production: Error level logging, batch processing
     environment:
       - LOG_LEVEL=error
@@ -101,12 +99,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: |
       /bin/sh -c "
-      apk add --no-cache docker-cli
+      apk add --no-cache docker-cli curl
       while true; do
-        docker exec \${COMPOSE_PROJECT_NAME}-postgres pg_dump -U postgres -d signoz \
-          > /backups/signoz-\$(date +\%Y\%m\%d-\%H\%M\%S).sql
+        # Backup ClickHouse data
+        docker exec \${COMPOSE_PROJECT_NAME}-signoz-clickhouse clickhouse-client \
+          --user signoz --password signoz --database signoz \
+          --query 'SHOW TABLES' > /backups/tables-\$(date +\%Y\%m\%d-\%H\%M\%S).txt
         # Keep only last 7 days of backups
-        find /backups -name 'signoz-*.sql' -mtime +7 -delete
+        find /backups -name 'tables-*.txt' -mtime +7 -delete
         sleep 86400  # Daily backup
       done
       "
@@ -134,17 +134,21 @@ services:
 
 # Production: Use named volumes with persistent storage drivers
 volumes:
-  prometheus-data:
+  prometheus-storage:
     driver: local
     driver_opts:
       type: nfs
       o: addr=${NFS_SERVER:?NFS_SERVER not set},vers=4,soft,timeo=180,bg,tcp,rw
       device: ":${NFS_PROMETHEUS_PATH:?NFS_PROMETHEUS_PATH not set}"
-  grafana-data:
+  grafana-storage:
     driver: local
-  netdata-data:
+  alertmanager-storage:
     driver: local
-  clickhouse-data:
+  netdata-storage:
+    driver: local
+  signoz-clickhouse-storage:
+    driver: local
+  uptime-kuma-storage:
     driver: local
 
 networks:

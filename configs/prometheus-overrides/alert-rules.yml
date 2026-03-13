@@ -164,9 +164,9 @@ groups:
 # Monitoring infrastructure alerts
 # ----------------------------
 
-- name: Monitoring Health
-  interval: 1m
-  rules:
+  - name: Monitoring Health
+    interval: 1m
+    rules:
     # Prometheus scrape failure (no targets up)
     - alert: PrometheusScrapeFailure
       expr: up{job="prometheus"} == 0

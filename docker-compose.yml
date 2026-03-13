@@ -16,8 +16,6 @@
 #   docker-compose down           # Stop all services
 #   docker-compose logs -f        # View logs
 
-version: '3.8'
-
 # ============================================================================
 # SERVICES
 # ============================================================================
@@ -181,8 +179,8 @@ services:
       - signoz-clickhouse-storage:/var/lib/clickhouse
     environment:
       - CLICKHOUSE_DB=signoz
-      - CLICKHOUSE_USER=signoz
-      - CLICKHOUSE_PASSWORD=signoz
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-signoz}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-signoz}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8123/ping"]
       interval: 30s
@@ -203,8 +201,8 @@ services:
     ports:
       - "${SIGNOZ_PORT:-3301}:3301"
     environment:
-      - ClickHouseURL=http://signoz-clickhouse:8123/?database=signoz&username=signoz&password=signoz
-      - STORAGE=clickhouse
+      - ClickHouseURL=http://signoz-clickhouse:8123/?database=signoz&username=${CLICKHOUSE_USER:-signoz}&password=${CLICKHOUSE_PASSWORD:-signoz}
+      - SIGNOZ_TELEMETRYSTORE_PROVIDER=clickhouse
       - GODEBUG=madvdontneed=1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3301/api/health"]
@@ -219,7 +217,7 @@ services:
   # ========== SIGNOZ OTEL COLLECTOR ==========
   # Collects metrics, logs, and traces via OpenTelemetry protocol
   signoz-otel-collector:
-    image: signoz/otel-collector-contrib:latest
+    image: signoz/signoz-otel-collector:latest
     container_name: monitoring-signoz-otel-collector
     hostname: signoz-otel-collector
     networks:
@@ -232,7 +230,7 @@ services:
       # Metrics
       - "${OTEL_COLLECTOR_METRICS_PORT:-8888}:8888"
     volumes:
-      - ./configs/signoz-otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+      - ./configs/signoz-overrides/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
     command:
       - "--config=/etc/otel-collector-config.yml"
     environment:
